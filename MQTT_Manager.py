@@ -20,17 +20,12 @@ class MQTT_Manager():
         self.mqtt_client = mqtt_client
         self.robot = robot
 
-    def configure(self):
-        self.configure_client()
-
     def connect(self):
-        self.configure()
+        self.configure_client()
         try:
             self.mqtt_client.connect()
         except Exception:
-            print("------Error connecting to MQTT broker-------", Exception)
-            # Por alguna razon cuando no se puede conectar al MQTT da error y no se encienden los leds ni nada.
-            return False
+            raise Exception("----ERROR CONECTANDO CON EL BROKER MQTT----",Exception)
         else:
             self.subscribe()
             return True

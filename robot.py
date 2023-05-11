@@ -44,19 +44,23 @@ class Robot():
 
     # Las funciones relacionadas con MQTT estan pendientes para moverlas al MQTT_Manager
     def connect(self, mqtt_manager:MQTT_Manager):
-        if(mqtt_manager.connect()):
+        try:
+            self.mqtt_connection = mqtt_manager.connect()
+        except Exception:
+            esp.reset()
+            self.status_led.color(255, 255, 0)
+            self.status_led.blink(6)
+            self.status_led.color(255, 0, 0)
+            print("----ERRROR CONECTANDO CON EL BROKER MQTT----",Exception)
+            return False
+        else:
             self.mqtt = mqtt_manager
-            self.mqtt_connection = True
             self.status_led.color(0, 255, 255)
             self.status_led.blink(6)
             self.status_led.color(255, 0, 0)
             self.mqtt.publish(data="{} succesfully connected :)\n".format(self.name))
             return True
-        else:
-            self.status_led.color(255, 255, 0)
-            self.status_led.blink(6)
-            self.status_led.color(255, 0, 0)
-            return False
+        
 
     def listen(self):
         self.mqtt.mqtt_client.loop()
@@ -223,6 +227,7 @@ class Motor():
         return map_range(value, 0, 100, self.death_zone, 100)
     
     def change_rotation(self):
+        """NO SE USA."""
         rotation = self.movement
         if rotation == CLOCKWISE:
             self.movement = COUNTER_CLOCKWISE
