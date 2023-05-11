@@ -7,7 +7,7 @@ import math as mt
 
 class PID_Controller():
     """Clase que crea un objeto `PID_Controller`"""
-    def __init__(self, Kp, Ki, Kd, ref, measure_prev, a=0.9,  sat=15, Kr=None, b=1, c=1):
+    def __init__(self, Kp, Ki, Kd, ref, start_measure, a=0.9,  sat=15, Kr=None, b=1, c=1):
         self.b = b   #Parametro de ponderacion
         self.c = c   #Parametro de ponderacion
 
@@ -29,7 +29,7 @@ class PID_Controller():
         self.derivative = 0
         self.error_prev = 0
         self.ref_prev = 0
-        self.measure_prev = measure_prev
+        self.measure_prev = start_measure
         self.u_prev = 0
 
         self.sat = sat
