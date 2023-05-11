@@ -58,12 +58,6 @@ class Robot():
             self.status_led.color(255, 0, 0)
             return False
 
-    def reset(self):
-        pass
-
-    def status(self):
-        pass
-
     def listen(self):
         self.mqtt.mqtt_client.loop()
 
@@ -93,23 +87,34 @@ class Robot():
         else:
             raise Exception("Enable motors before using them.")
 
-    def move_backwards(self, power:float):
+    def standby_control(self, end_t=None):
+        if end_t != None:
+            t1 = t0 = time.monotonic()
+            while (t1 - t0) < end_t:
+                t1 = time.monotonic()
+            self.motor_R.movement = STANDBY
+            self.motor_L.movement = STANDBY
+            return True
+        else:
+            return True
+
+    def move_backward(self, power:float, end_t=None):
         self.checkmotors()
-        self.motor_R.power = self.motor_L.power = power
         self.motor_R.movement = COUNTER_CLOCKWISE
         self.motor_L.movement = CLOCKWISE
+        self.motor_R.power = power
+        self.motor_L.power = power
+        self.standby_control(end_t)
+        return True
 
-    def move_forward(self, power:float, end_t=1):
+    def move_forward(self, power:float, end_t=None):
         self.checkmotors()
         self.motor_R.movement = CLOCKWISE
         self.motor_L.movement = COUNTER_CLOCKWISE
         self.motor_R.power = power
         self.motor_L.power = power
-        t1 = t0 = time.monotonic()
-        while (t1 - t0) < end_t:
-            t1 = time.monotonic()
-        self.motor_R.movement = STANDBY
-        self.motor_L.movement = STANDBY
+        self.standby_control(end_t)
+        return True
 
     def stabilize(self, ref_angle=0):
         pass
@@ -161,43 +166,15 @@ class Robot():
                     pid, reference_angle, current_angle, error), mqtt_topic="data"
                     )
         self.motor_R.movement = STANDBY
-        self.motor_L.movement = STANDBY
-
-    def move_forward_2(self, power:float):
-        n = 0
-        t0 = time.monotonic()
-        t1 = 0
-        self.checkmotors()
-        start_angle = self.IMU.euler[0]
-        self.motor_R.movement = CLOCKWISE
-        self.motor_L.movement = COUNTER_CLOCKWISE
-        self.motor_R.power = power
-        self.motor_L.power = power
-        while (t1-t0) < 2:
-            current_angle = self.IMU.euler[0]
-            epsilon = start_angle - current_angle
-            epsilon = check_angle(epsilon)
-            Kp = 5                                      #  Hay que ajustar este valor y puede que añadir algun control mejor
-            correction = Kp*(epsilon / 2)               # Epsilon puede ser positivo o negativo dependiendo de hacia que lado haya que corregir.
-            self.motor_R.power = power - correction
-            self.motor_L.power = power + correction
-            t1 = time.monotonic()
-            """ self.publish(
-                data="Correction: {}\nStart angle: {}\nCurrent angle: {}\n".format(
-                correction, start_angle, current_angle)
-            ) """
-            n += 1
-        self.motor_R.movement = STANDBY
-        self.motor_L.movement = STANDBY   
+        self.motor_L.movement = STANDBY 
 
     def brake(self, power:float):   # No se si funciona o hace algo.
         self.checkmotors()
+        self.motor_R.movement = self.motor_L.movement = BRAKE
         self.motor_R.power = power
         self.motor_L.power = power
-        self.motor_R.movement = self.motor_L.movement = BRAKE
 
-    def standby(self, t=0):
-        time.sleep(t)
+    def standby(self):
         self.checkmotors()
         self.motor_R.power = 0
         self.motor_L.power = 0
@@ -209,21 +186,23 @@ class Robot():
     def disable_motors(self):
         self.enable_signal.value = False
 
-    def clockwise_rotate(self, power):
+    def clockwise_rotate(self, power, end_t=None):
         self.checkmotors()
-        # Es importante que asignar el valor de power sea lo primero para que el setter de movimiento coga ese valor.
-        #self.motor_R.power = self.motor_L.power = power
         self.motor_R.movement = COUNTER_CLOCKWISE
         self.motor_L.movement = COUNTER_CLOCKWISE
-        self.motor_R.power = (1-MOTOR_DIFF)*power
+        self.motor_R.power = power
         self.motor_L.power = power
+        self.standby_control(end_t)
+        return True
 
-    def counter_clockwise_rotate(self, power):
+    def counter_clockwise_rotate(self, power, end_t=None):
         self.checkmotors()
-        self.motor_R.power = (1-MOTOR_DIFF)*power
-        self.motor_L.power = power   # Es el motor mas lento.
         self.motor_R.movement = CLOCKWISE
         self.motor_L.movement = CLOCKWISE
+        self.motor_R.power = power
+        self.motor_L.power = power   # Es el motor mas lento.
+        self.standby_control(end_t)
+        return True
 
     @property
     def motors_enabled(self):
@@ -275,7 +254,6 @@ class Motor():
     @movement.setter
     def movement(self, value):
         self._movement = value
-        #self.power_check()
         if self.movement == STANDBY:
             self.pwm_signal_A.duty_cycle = self.pwm_signal_B.duty_cycle = 0
         return True
@@ -284,7 +262,7 @@ class Motor():
     def power(self, value):
         #Habria que calibrar los motores ya que el 0% no equivale al 0 sino que por debajo de cierto valor ya se parann.
         #raise Exception("La potencia del motor debe estar entre el 0 % y el 100 %")
-        if value == 0:
+        """ if value == 0:
             self._power = 0
         else:
             if value < 0:
@@ -292,8 +270,11 @@ class Motor():
                 self.change_rotation()
             if value > 100:
                 value  = 100
-            self._power = self.calibrate(value)
-
+            self._power = self.calibrate(value) """
+            
+        if value > 100:
+            value = 100
+        self._power = self.calibrate(value)
         if self.movement == BRAKE:
             self.pwm_signal_A.duty_cycle = self.pwm_signal_B.duty_cycle = self.normalized_power #Frena con la potencia que se le asigne.
         elif self.movement == CLOCKWISE:
