@@ -1,11 +1,7 @@
 if __name__ == "__main__":
     from robot import Robot
 
-COMANDS = ("LED","*IDN","*RST","*TST","*OPC","*OPC?","*WAI","*CLS","*ESE","*ESE?","*ESR?","*SRE","*SRE?","*STB?")
-
-class Comands():
-    def __init__(self, command):
-        self.command = command
+COMANDS = ("LED","*IDN","CALIB","MOVE","STB")
 
 class Command_Handler():
     def __init__(self, robot:Robot):
@@ -15,7 +11,7 @@ class Command_Handler():
         self.robot.mqtt.publish("{} no es un comando valido".format(command), self.robot.name)
 
     def handler(self, command:str):
-        if len(command) == 0:
+        if command not in COMANDS:
             self.not_valid(command)
             return False
         if command[0] == '*':
@@ -49,6 +45,10 @@ class Command_Handler():
                 self.robot.move_forward_PID(*c)
             elif c[0] == "STOP":
                 self.robot.standby()
+            elif c[0] == "CALIB":
+                self.robot.calibrate(True)
+            elif c[0] == "STB":
+                pass
             else:
                 self.not_valid(command)
                 return False

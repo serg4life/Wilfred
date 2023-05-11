@@ -65,8 +65,8 @@ class Robot():
         self.status_led = led
         return True
     
-    def calibrate(self):
-        if (self.offsets or self.radius) is None:
+    def calibrate(self, reset_calibration=False):
+        if(reset_calibration) or (self.offsets or self.radius) is None:
             offsets, radius = self.IMU.calibration_routine()
             self.offsets = offsets
             self.radius = radius
