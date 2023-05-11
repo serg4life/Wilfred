@@ -11,7 +11,7 @@ class Command_Handler():
         self.robot.mqtt.publish("{} no es un comando valido".format(command), self.robot.name)
 
     def handler(self, command:str):
-        if command not in COMANDS:
+        if command.split(':')[0] not in COMANDS:
             self.not_valid(command)
             return False
         if command[0] == '*':
@@ -37,7 +37,7 @@ class Command_Handler():
                 else:
                     self.not_valid(command)
             elif c[0] == "MOVE":
-                print(c)
+
                 if len(c) < 2:
                     self.robot.mqtt.publish("Faltan argumentos", self.robot.name)
                     return False
@@ -51,11 +51,11 @@ class Command_Handler():
             elif c[0] == "STB":
                 args = c[1:]
                 if len(c) == 2:
-                    self.robot.stabilize(Kp=args[0])
+                    self.robot.stabilize(Kp=float(args[0]))
                 elif len(c) == 3:
-                    self.robot.stabilize(Kp=args[0],a=args[1])
+                    self.robot.stabilize(Kp=float(args[0]),a=float(args[1]))
                 elif len(c) == 4:
-                    self.robot.stabilize(Kp=args[0],a=args[1],Ki=args[2])
+                    self.robot.stabilize(Kp=float(args[0]),a=float(args[1]),Ki=float(args[2]))
                 else:
                     self.not_valid(command)
                     return False

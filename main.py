@@ -48,8 +48,7 @@ if(Wilfred.mqtt_connection):
         Wilfred.listen()
 else:
     while True:
-        pass
-        #Wilfred.led.value = True
-        #Wilfred.clockwise_rotate(50, 0.1)
-        #Wilfred.led.value = False
-        #Wilfred.counter_clockwise_rotate(50, 0.1)
+        Wilfred.led.value = True
+        Wilfred.clockwise_rotate(50, 0.1)
+        Wilfred.led.value = False
+        Wilfred.counter_clockwise_rotate(50, 0.1)

@@ -24,8 +24,8 @@ def check_angle(angle):
 
 class Robot():
     def __init__(self, name=ROBOT_NAME):
-        self.motor_L = Motor(board.A2, board.A3, MOTOR_DEATH_ZONE_L) # Obviamente para que funcionen bien los movimientos las entradas del motor tienen que estar bien definidas.
-        self.motor_R = Motor(board.A1, board.A0, MOTOR_DEATH_ZONE_R)
+        self.motor_L = Motor(board.A1, board.A0, MOTOR_DEATH_ZONE_L) # Obviamente para que funcionen bien los movimientos las entradas del motor tienen que estar bien definidas.
+        self.motor_R = Motor(board.A2, board.A3, MOTOR_DEATH_ZONE_R)
         self.enable_signal = DigitalInOut(board.D2)     #Entrada de enable del driver de motores.
         self.enable_signal.direction = Direction.OUTPUT
         self.enable_signal.value = False
@@ -124,14 +124,17 @@ class Robot():
     def stabilize(self, Kp=0, Kd=0, Ki=0, a=0.9, ref_angle=0, end_t=20):
         data = ""
         ii = 0
-        angle_measure = self.IMU.euler[2]
-        controller = PID_Controller(Kp, Ki, Kd, ref_angle, angle_measure, a)
         t0 = t = time.monotonic()
-        while(t0-t) < end_t:
-            dt = t-t0
+        angle_measure = self.IMU.euler[2]
+        angle_measure = check_angle(angle_measure)
+        controller = PID_Controller(Kp, Ki, Kd, ref_angle, angle_measure, a)
+        while(t-t0) < end_t:
+            prev_t = t
+            t = time.monotonic()
+            dt = t - prev_t
             
             # La muestra que tiene el perido alterado por el envio de datos no se actualiza para evitar picos.
-            if not((ii-1) % 50):
+            if not((ii-1) % 50) or ii == 0:
                 pid = controller.update(angle_measure, dt)
             
             if pid >= 0:
@@ -139,20 +142,20 @@ class Robot():
             elif pid < 0:
                 self.move_backward(abs(pid))
                 
-            data += ":" + str(pid) + ":" + str(angle_measure) + "/"
+            data += str(pid) + ":" + str(angle_measure) + "/"
             
             # El tiempo de muestreo no es periodico por culpa de esto.
             if ii % 50 == 0 and ii != 0:
-                data = data[1:len(data)-2]  # Antes de enviar la informacion quitamos el primer : y el ultimo /
+                data = data[0:len(data)-1]  # Antes de enviar la informacion quitamos el ultimo /
                 self.mqtt.publish(data,"data")
-                data = []   # Reseteamos el array.
+                data = ""   # Reseteamos el array.
 
             ii += 1
             angle_measure = self.IMU.euler[2]
-            t = time.monotonic()
+            angle_measure = check_angle(angle_measure)
         
         # Al acabar mandamos las muestras que faltaban.
-        data = data[1:len(data)-2]
+        data = data[0:len(data)-1]
         self.mqtt.publish(data,"data")
         self.standby()
         return True
