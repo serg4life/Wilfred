@@ -21,6 +21,7 @@ class Command_Handler():
             elif command == "RST":
                 self.robot.reset()
         else:
+            # Dividimos el str en parametros.
             c = command.split(':')
             if c[-1] == "":
                 c.pop(-1)
@@ -48,7 +49,16 @@ class Command_Handler():
             elif c[0] == "CALIB":
                 self.robot.calibrate(True)
             elif c[0] == "STB":
-                pass
+                args = c[1:]
+                if len(c) == 2:
+                    self.robot.stabilize(Kp=args[0])
+                elif len(c) == 3:
+                    self.robot.stabilize(Kp=args[0],a=args[1])
+                elif len(c) == 4:
+                    self.robot.stabilize(Kp=args[0],a=args[1],Ki=args[2])
+                else:
+                    self.not_valid(command)
+                    return False
             else:
                 self.not_valid(command)
                 return False

@@ -129,20 +129,25 @@ class Robot():
         t0 = t = time.monotonic()
         while(t0-t) < end_t:
             dt = t-t0
-            pid = controller.update(angle_measure, dt)
+            
+            # La muestra que tiene el perido alterado por el envio de datos no se actualiza para evitar picos.
+            if not((ii-1) % 50):
+                pid = controller.update(angle_measure, dt)
             
             if pid >= 0:
-                u = pid
-                self.move_forward(u)
+                self.move_forward(abs(pid))
             elif pid < 0:
-                u = abs(pid)
-                self.move_backward(u)
+                self.move_backward(abs(pid))
                 
             data += ":" + str(pid) + ":" + str(angle_measure) + "/"
+            
+            # El tiempo de muestreo no es periodico por culpa de esto.
             if ii % 50 == 0 and ii != 0:
                 data = data[1:len(data)-2]  # Antes de enviar la informacion quitamos el primer : y el ultimo /
                 self.mqtt.publish(data,"data")
                 data = []   # Reseteamos el array.
+
+            ii += 1
             angle_measure = self.IMU.euler[2]
             t = time.monotonic()
         

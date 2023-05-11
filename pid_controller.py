@@ -49,7 +49,7 @@ class PID_Controller():
 
         # Calcular la señal de control
         #u = self.Kp*error_pondered + i_control + self.filtro_d.get_filtered_value(self.Kd * self.derivative_pondered)   
-        u = self.Kp * self.filtro_d.get_filtered_value(self.derivative_pondered)
+        u = self.Kp * self.filtro_d.get_filtered_value(self.derivative_pondered) + i_control
         # Para no dar mas tension de la que los motores aceptan
         if u > self.sat:
             u = self.sat
