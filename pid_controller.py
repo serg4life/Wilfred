@@ -7,17 +7,17 @@ import math as mt
 
 class PID_Controller():
     """Clase que crea un objeto `PID_Controller`"""
-    def __init__(self, Kp, Ki, Kd, ref, start_measure, a=0.9,  sat=15, Kr=None, b=1, c=1):
+    def __init__(self, Kp, Ki, Kd, ref, start_measure, a=0.9,  sat=100, Kr=None, b=1, c=1):
         self.b = b   #Parametro de ponderacion
         self.c = c   #Parametro de ponderacion
 
-        self.filtro_d = PID_Filter(50, 0.001)
+        self.filtro_d = PID_Filter(5, 0.005)
 
         self.Kp = Kp
         self.Ki = Ki
         self.Kd = Kd
         self.a = a
-
+        
         if Kr is None:
             self.Kr = mt.sqrt(self.Ki * self.Kd)    #Tipicamente
         else:
@@ -49,13 +49,13 @@ class PID_Controller():
 
         # Calcular la señal de control
         #u = self.Kp*error_pondered + i_control + self.filtro_d.get_filtered_value(self.Kd * self.derivative_pondered)   
-        u = self.Kp * self.derivative_pondered + i_control
+        u = self.Kp * self.filtro_d.get_filtered_value(self.derivative_pondered) + i_control
         
         # Para no dar mas tension de la que los motores aceptan
         if u > self.sat:
             u = self.sat
         elif u < -self.sat:
-            u = -abs(self.sat)
+            u = -self.sat
 
         # Actualizar los valores previos
         self.error_prev = error
@@ -67,14 +67,14 @@ class PID_Controller():
 
 class PID_Filter():
     def __init__(self, fc=500, T=0.001):
-        self.fc = fc
-        self.T = T
         self.vo_prev = 0
         self.vi_prev = 0
+        self.ao = mt.exp(-T*2*mt.pi*fc)
+        self.ai = mt.exp(-T*2*mt.pi*fc)
 
     def get_filtered_value(self, data):
         """Filtro paso bajo digital"""
-        vo = self.vo_prev*mt.exp(-self.T*2*mt.pi*self.fc) + self.vi_prev*(1 - mt.exp(-self.T*2*mt.pi*self.fc))
+        vo = self.vo_prev*self.ao + self.vi_prev*(1 - self.ai)
         self.vo_prev = vo
         self.vi_prev = data
         return vo

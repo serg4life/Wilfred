@@ -154,7 +154,9 @@ class RGB():
         n = 0
         while n < k:
             self.state = (not self.state)
-            time.sleep(speed)
+            t = t0 = time.monotonic()
+            while(t-t0 < speed):
+                t = time.monotonic()
             n += 1
         self.state = initial_state
         

@@ -1,6 +1,6 @@
 import board
 from digitalio import DigitalInOut, Direction
-from pid_controller import PID_Controller
+from pid_controller import PID_Controller, PID_Filter
 import time
 import pwmio
 from MQTT_Manager import MQTT_Manager
@@ -72,6 +72,7 @@ class Robot():
     
     def calibrate(self, reset_calibration=False):
         if(reset_calibration) or (self.offsets or self.radius) is None:
+            self.status_led.color(255, 0, 0)
             offsets, radius = self.IMU.calibration_routine()
             self.offsets = offsets
             self.radius = radius
@@ -123,6 +124,8 @@ class Robot():
 
     def stabilize(self, Kp=0, Kd=0, Ki=0, a=0.9, ref_angle=0, end_t=20):
         data = ""
+        # Filtramos el sensor para que las vibraciones del robot no afecten.
+        sensor_f = PID_Filter(5, 0.005)
         ii = 0
         t0 = t = time.monotonic()
         angle_measure = self.IMU.euler[2]
@@ -134,13 +137,13 @@ class Robot():
             dt = t - prev_t
             
             # La muestra que tiene el perido alterado por el envio de datos no se actualiza para evitar picos.
-            if not((ii-1) % 50) or ii == 0:
+            if (ii-1) % 50 != 0:
                 pid = controller.update(angle_measure, dt)
             
             if pid >= 0:
-                self.move_forward(abs(pid))
+                self.move_forward(pid)
             elif pid < 0:
-                self.move_backward(abs(pid))
+                self.move_backward(-pid)
                 
             data += str(pid) + ":" + str(angle_measure) + "/"
             
@@ -152,6 +155,7 @@ class Robot():
 
             ii += 1
             angle_measure = self.IMU.euler[2]
+            angle_measure = sensor_f.get_filtered_value(angle_measure)
             angle_measure = check_angle(angle_measure)
         
         # Al acabar mandamos las muestras que faltaban.

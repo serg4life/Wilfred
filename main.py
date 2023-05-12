@@ -1,8 +1,8 @@
 from adafruit_esp32spi import adafruit_esp32spi_wifimanager
+import time
 from MQTT_Manager import MQTT_Manager
 from robot import Robot
 from myFunctions import esp
-
 try:
     from mysecrets import secrets
 except ImportError:
@@ -42,13 +42,13 @@ if(network_connection):
     
 Wilfred.enable_motors()
 Wilfred.calibrate()
-
 if(Wilfred.mqtt_connection):
     while True:
         Wilfred.listen()
 else:
     while True:
         Wilfred.led.value = True
-        Wilfred.clockwise_rotate(50, 0.1)
+        time.sleep(0.5)
         Wilfred.led.value = False
-        Wilfred.counter_clockwise_rotate(50, 0.1)
+        time.sleep(0.5)
+    
