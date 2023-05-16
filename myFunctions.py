@@ -1,3 +1,8 @@
+"""Modulo que declara algunas variables y funciones necesarias e incluye las clases `MyIMU` y `RGB`.
+
+* Author(s): Sergio Fernández
+"""
+
 import board
 import busio
 import time

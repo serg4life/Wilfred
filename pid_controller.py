@@ -35,6 +35,7 @@ class PID_Controller():
         self.sat = sat
     
     def update(self, measure, dt):
+        """Actualiza los valores de un objeto PID_Controller y devuelve la salida."""
         error = self.ref - measure
         error_pondered = self.b * self.ref - measure
         self.integral += error * dt

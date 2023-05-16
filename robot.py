@@ -1,3 +1,10 @@
+"""Modulo que contiene la configuracion necesaria para el funcionamiento de un robot de 2 motores. 
+
+Contiene las clases `Robot` y `Motor`.
+
+* Author(s): Sergio Fernández
+"""
+
 import board
 from digitalio import DigitalInOut, Direction
 from pid_controller import PID_Controller, PID_Filter
@@ -23,6 +30,8 @@ def check_angle(angle):
     return new_angle
 
 class Robot():
+    """Clase que crea una instancias `Robot` e incluye los metodos necesarios para su control y configuracion."""
+    
     def __init__(self, name=ROBOT_NAME):
         self.motor_L = Motor(board.A1, board.A0, MOTOR_DEATH_ZONE_L) # Obviamente para que funcionen bien los movimientos las entradas del motor tienen que estar bien definidas.
         self.motor_R = Motor(board.A2, board.A3, MOTOR_DEATH_ZONE_R)
@@ -126,7 +135,7 @@ class Robot():
         data = ""
         ii = 0
         ii_rate=50
-        oscilation_t=0.1
+        oscilation_t=1
         t0 = t = time.monotonic()
         angle_measure = self.IMU.euler[2]
         angle_measure = check_angle(angle_measure)
@@ -138,11 +147,9 @@ class Robot():
             
             if (ii-1) % ii_rate != 0:
                 pid = controller.update(angle_measure, dt)
-            
-            if pid <= 0:
-                self.move_backward(power, oscilation_t + pid)
-            elif pid > 0:
-                self.move_forward(power, oscilation_t - pid)
+                
+            self.move_backward(power, oscilation_t + pid/2)
+            self.move_forward(power, oscilation_t - pid/2)
             
             data += str(pid) + ":" + str(angle_measure) + "/"
             
@@ -298,6 +305,8 @@ class Robot():
         return self.enable_signal.value
 
 class Motor():
+    """Clase que crea una instancia `Motor` para poder controlar un motor bipolar."""
+    
     def __init__(self, pinA:int, pinB:int, death_zone=0):
         self._A = pinA
         self._B = pinB

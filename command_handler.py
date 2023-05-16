@@ -1,9 +1,17 @@
+"""Modulo que se encarga de recivir los comandos via MQTT y gestionar las acciones asociadas a cada comando.add()
+
+Contiene la clase `Command_Handler`.
+
+* Author(s): Sergio Fernández
+"""
+
 if __name__ == "__main__":
     from robot import Robot
 
 COMANDS = ("LED","*IDN","CALIB","MOVE","STB")
 
 class Command_Handler():
+    """Clase que crea una instancia `Command_Handler`, hace de etapa intermedia entre el MQTT_Manager y el Robot."""
     def __init__(self, robot:Robot):
         self.robot = robot
 

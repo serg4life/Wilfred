@@ -1,3 +1,8 @@
+"""Modulo que contiene la clase `MQTT_Manager` para gestionar la comunicacion MQTT de una instancia Robot.
+
+* Author(s): Sergio Fernández
+"""
+
 from adafruit_minimqtt.adafruit_minimqtt import MQTT, set_socket
 import adafruit_esp32spi.adafruit_esp32spi_socket as socket
 from command_handler import Command_Handler
@@ -9,6 +14,8 @@ except ImportError:
     raise
 
 class MQTT_Manager():
+    """Clase que crea una instancia `MQTT_Manager` para gestionar la comunicacion MQTT de una instancia Robot."""
+    
     def __init__(self, robot):
         set_socket(socket, esp)
         mqtt_client = MQTT(
