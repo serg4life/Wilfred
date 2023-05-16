@@ -122,11 +122,53 @@ class Robot():
         self.standby_control(end_t)
         return True
 
+    def oscilate(self, power:float, Kp=0, Kd=0, Ki=0, ref_angle=0, end_t=20):
+        data = ""
+        ii = 0
+        ii_rate=50
+        oscilation_t=0.1
+        t0 = t = time.monotonic()
+        angle_measure = self.IMU.euler[2]
+        angle_measure = check_angle(angle_measure)
+        controller = PID_Controller(Kp, Ki, Kd, ref_angle, angle_measure, a)
+        while(t-t0) < end_t:
+            prev_t = t
+            t = time.monotonic()
+            dt = t - prev_t
+            
+            if (ii-1) % ii_rate != 0:
+                pid = controller.update(angle_measure, dt)
+            
+            if pid <= 0:
+                self.move_backward(power, oscilation_t + pid)
+            elif pid > 0:
+                self.move_forward(power, oscilation_t - pid)
+            
+            data += str(pid) + ":" + str(angle_measure) + "/"
+            
+            # El tiempo de muestreo no es periodico por culpa de esto.
+            if ii % ii_rate == 0 and ii != 0:
+                data = data[0:len(data)-1]  # Antes de enviar la informacion quitamos el ultimo /
+                self.mqtt.publish(data,"data")
+                data = ""   # Reseteamos el array.
+
+            ii += 1
+            angle_measure = self.IMU.euler[2]
+            angle_measure = check_angle(angle_measure)
+        
+        # Al acabar mandamos las muestras que faltaban.
+        data = data[0:len(data)-1]
+        self.mqtt.publish(data,"data")
+        self.standby()
+        return True
+        
+
     def stabilize(self, Kp=0, Kd=0, Ki=0, a=0.9, ref_angle=0, end_t=20):
         data = ""
         # Filtramos el sensor para que las vibraciones del robot no afecten.
         sensor_f = PID_Filter(5, 0.005)
         ii = 0
+        ii_rate = 50
         t0 = t = time.monotonic()
         angle_measure = self.IMU.euler[2]
         angle_measure = check_angle(angle_measure)
@@ -137,7 +179,7 @@ class Robot():
             dt = t - prev_t
             
             # La muestra que tiene el perido alterado por el envio de datos no se actualiza para evitar picos.
-            if (ii-1) % 50 != 0:
+            if (ii-1) % ii_rate != 0:
                 pid = controller.update(angle_measure, dt)
             
             if pid >= 0:
@@ -148,14 +190,15 @@ class Robot():
             data += str(pid) + ":" + str(angle_measure) + "/"
             
             # El tiempo de muestreo no es periodico por culpa de esto.
-            if ii % 50 == 0 and ii != 0:
+            if ii % ii_rate == 0 and ii != 0:
                 data = data[0:len(data)-1]  # Antes de enviar la informacion quitamos el ultimo /
                 self.mqtt.publish(data,"data")
                 data = ""   # Reseteamos el array.
 
             ii += 1
             angle_measure = self.IMU.euler[2]
-            angle_measure = sensor_f.get_filtered_value(angle_measure)
+            #Descomentar la linea de abajo para filtrar la medida del sensor.
+            angle_measure = sensor_f.get_value(angle_measure)
             angle_measure = check_angle(angle_measure)
         
         # Al acabar mandamos las muestras que faltaban.
@@ -213,7 +256,8 @@ class Robot():
         self.motor_R.movement = STANDBY
         self.motor_L.movement = STANDBY 
 
-    def brake(self, power:float):   # No se si funciona o hace algo.
+    def brake(self, power:float):
+        """Frena los motores, pero como son de torque bajo no tiene mucha fureza."""
         self.checkmotors()
         self.motor_R.movement = self.motor_L.movement = BRAKE
         self.motor_R.power = power

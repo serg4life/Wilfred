@@ -48,8 +48,11 @@ class PID_Controller():
             i_control = self.Ki * self.integral
 
         # Calcular la señal de control
-        #u = self.Kp*error_pondered + i_control + self.filtro_d.get_filtered_value(self.Kd * self.derivative_pondered)   
-        u = self.Kp * self.filtro_d.get_filtered_value(self.derivative_pondered) + i_control
+        #u = self.Kp*error_pondered + i_control + self.filtro_d.get_value(self.Kd * self.derivative_pondered)
+        
+        # Descomentar la linea de abajo para filtrar la accion derivativa
+        #self.derivative_pondered = self.filtro_d.get_value(self.derivative_pondered)
+        u = self.Kp * self.derivative_pondered + i_control
         
         # Para no dar mas tension de la que los motores aceptan
         if u > self.sat:
@@ -64,7 +67,7 @@ class PID_Controller():
         self.u_prev = u
 
         return u
-
+    
 class PID_Filter():
     def __init__(self, fc=500, T=0.001):
         self.vo_prev = 0
@@ -72,7 +75,7 @@ class PID_Filter():
         self.ao = mt.exp(-T*2*mt.pi*fc)
         self.ai = mt.exp(-T*2*mt.pi*fc)
 
-    def get_filtered_value(self, data):
+    def get_value(self, data):
         """Filtro paso bajo digital"""
         vo = self.vo_prev*self.ao + self.vi_prev*(1 - self.ai)
         self.vo_prev = vo
