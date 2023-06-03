@@ -17,7 +17,6 @@ class PID_Controller():
         self.Ki = Ki
         self.Kd = Kd
         self.a = a
-        
         if Kr is None:
             self.Kr = mt.sqrt(self.Ki * self.Kd)    #Tipicamente
         else:

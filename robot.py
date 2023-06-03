@@ -15,8 +15,8 @@ from myFunctions import MyIMU, RGB, esp, map_range
 
 CLOCKWISE, COUNTER_CLOCKWISE, BRAKE, STANDBY = 0, 1, 2, 3
 ROBOT_NAME = "Wilfred"
-IMU_OFFSETS = ((3, -8, -33), (746, 218, -241), (0, -1, -1))
-IMU_RADIUS = ((1000), (651))
+IMU_OFFSETS = ((3, -8, -33), (674, 219, -697), (-1, -1, 0))
+IMU_RADIUS = (1000, 1222)
 MOTOR_FREQUENCY = 50000
 MOTOR_DEATH_ZONE_L = 66  # Medido a 50KHz. Para mejor control una valor independiente para cada motor.
 MOTOR_DEATH_ZONE_R = 66 # Parece que no es la misma para las dos direcciones.
@@ -85,6 +85,7 @@ class Robot():
             offsets, radius = self.IMU.calibration_routine()
             self.offsets = offsets
             self.radius = radius
+            self.mqtt.publish("IMU Offsets: {}\nIMU Radius: {}\n".format(self.offsets, self.radius))
         else:
             self.set_calibration()
 
@@ -169,8 +170,7 @@ class Robot():
         self.standby()
         return True
         
-
-    def stabilize(self, Kp=0, Kd=0, Ki=0, a=0.9, ref_angle=0, end_t=20):
+    def stabilize(self, Kp=0, Kd=0, Ki=0, a=0.9, ref_angle=2.8, end_t=20):
         data = ""
         # Filtramos el sensor para que las vibraciones del robot no afecten.
         sensor_f = PID_Filter(5, 0.005)
@@ -188,12 +188,13 @@ class Robot():
             # La muestra que tiene el perido alterado por el envio de datos no se actualiza para evitar picos.
             if (ii-1) % ii_rate != 0:
                 pid = controller.update(angle_measure, dt)
+            # Cuando se estabilizo los signo del PID estaban al reves.
+            if pid <= 0:
+                self.move_forward(-pid)
+            elif pid > 0:
+                self.move_backward(pid)
             
-            if pid >= 0:
-                self.move_forward(pid)
-            elif pid < 0:
-                self.move_backward(-pid)
-                
+            """Si mandamos todo el array al final los str se pueden hacer fuera del bucle."""
             data += str(pid) + ":" + str(angle_measure) + "/"
             
             # El tiempo de muestreo no es periodico por culpa de esto.
@@ -207,7 +208,7 @@ class Robot():
             #Descomentar la linea de abajo para filtrar la medida del sensor.
             angle_measure = sensor_f.get_value(angle_measure)
             angle_measure = check_angle(angle_measure)
-        
+
         # Al acabar mandamos las muestras que faltaban.
         data = data[0:len(data)-1]
         self.mqtt.publish(data,"data")
