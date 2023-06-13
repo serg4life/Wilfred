@@ -17,7 +17,9 @@ class PID_Controller():
         self.Ki = Ki
         self.Kd = Kd
         self.a = a
+        Kr = 0.01
         if Kr is None:
+            #Como no estamos usando Kd, siempre es 0 asique le daremos un valor  a ojo.add()
             self.Kr = mt.sqrt(self.Ki * self.Kd)    #Tipicamente
         else:
             #Ganancia Anti-Windup, Kd > Kr > Ki
@@ -30,21 +32,23 @@ class PID_Controller():
         self.ref_prev = 0
         self.measure_prev = start_measure
         self.u_prev = 0
-
+        self.es = 0
         self.sat = sat
     
     def update(self, measure, dt):
         """Actualiza los valores de un objeto PID_Controller y devuelve la salida."""
         error = self.ref - measure
         error_pondered = self.b * self.ref - measure
-        self.integral += error * dt
         #self.derivative = (error - self.prev_error) / dt
         self.derivative_pondered = (1-self.a)*(self.c * (self.ref - self.a * self.ref_prev) - (measure - self.a * self.measure_prev)) / dt
 
         # Anti-Windup
         if self.u_prev > self.sat:
-            i_control = self.Ki * self.integral + self.Kr * (self.sat - self.u_prev)  #Si el sistema esta saturado añade un termino negativo.
+            self.es = self.sat - self.u_prev
+            self.integral += (self.Ki * error + self.Kr * self.es) * dt
+            i_control = self.integral   #Si el sistema esta saturado añade un termino negativo.
         else:
+            self.integral += error * dt
             i_control = self.Ki * self.integral
 
         # Calcular la señal de control
