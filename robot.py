@@ -170,7 +170,7 @@ class Robot():
         self.standby()
         return True
         
-    def stabilize(self, Kp=0, Kd=0, Ki=0, a=0.9, ref_angle=2.8, end_t=20):
+    def stabilize(self, Kp=0, Kd=0, Ki=0, a=0.9, ref_angle=0, end_t=20):
         data = ""
         # Filtramos el sensor para que las vibraciones del robot no afecten.
         sensor_f = PID_Filter(5, 0.005)
