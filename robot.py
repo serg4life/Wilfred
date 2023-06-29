@@ -170,7 +170,7 @@ class Robot():
         self.standby()
         return True
         
-    def stabilize(self, Kp=0, Kd=0, Ki=0, a=0.9, ref_angle=2.8, end_t=20):
+    def stabilize(self, Kp=0, Kd=0, Ki=0, a=0.9, ref_angle=0, end_t=20):
         data = ""
         # Filtramos el sensor para que las vibraciones del robot no afecten.
         sensor_f = PID_Filter(5, 0.005)
@@ -215,6 +215,32 @@ class Robot():
         self.standby()
         return True
 
+    def cl_move_forward(self, power:float, Kp, Ki=0, a=0.9, end_t=10):
+        Kd=0
+        t0 = t = time.monotonic()
+        ref_angle = self.IMU.euler[0]
+        ref_angle = check_angle(ref_angle)
+        controller = PID_Controller(Kp, Ki, Kd, ref_angle, ref_angle, a, filter=False)
+        self.checkmotors()
+        self.motor_R.movement = CLOCKWISE
+        self.motor_L.movement = COUNTER_CLOCKWISE
+        self.motor_R.power = power
+        self.motor_L.power = power
+        while(t-t0) < end_t:
+            prev_t = t
+            current_angle = self.IMU.euler[0]
+            current_angle = check_angle(current_angle)
+            t = time.monotonic()
+            dt = t - prev_t
+            pid = controller.update(current_angle, dt)
+
+
+            self.motor_R.power = power - pid/2
+            self.motor_L.power = power + pid/2
+
+        self.motor_R.movement = STANDBY
+        self.motor_L.movement = STANDBY     
+                
     def move_forward_PID(self, power:float, end_t=5):
         # Ha sido calibrado para funcionar bien al 50% de potencia al 100% se acaba desviabdo
         self.checkmotors()

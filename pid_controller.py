@@ -7,10 +7,10 @@ import math as mt
 
 class PID_Controller():
     """Clase que crea un objeto `PID_Controller`"""
-    def __init__(self, Kp, Ki, Kd, ref, start_measure, a=0.9,  sat=100, Kr=None, b=1, c=1):
+    def __init__(self, Kp, Ki, Kd, ref, start_measure, a=0.9,  sat=100, Kr=None, b=1, c=1, filter=True):
         self.b = b   #Parametro de ponderacion
         self.c = c   #Parametro de ponderacion
-
+        self.filter = filter
         self.filtro_d = PID_Filter(5, 0.005)
 
         self.Kp = Kp
@@ -53,9 +53,8 @@ class PID_Controller():
 
         # Calcular la señal de control
         #u = self.Kp*error_pondered + i_control + self.filtro_d.get_value(self.Kd * self.derivative_pondered)
-        
-        # Descomentar la linea de abajo para filtrar la accion derivativa
-        #self.derivative_pondered = self.filtro_d.get_value(self.derivative_pondered)
+        if self.filter:
+            self.derivative_pondered = self.filtro_d.get_value(self.derivative_pondered)
         u = self.Kp * self.derivative_pondered + i_control
         
         # Para no dar mas tension de la que los motores aceptan

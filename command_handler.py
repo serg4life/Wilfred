@@ -8,7 +8,7 @@ Contiene la clase `Command_Handler`.
 if __name__ == "__main__":
     from robot import Robot
 
-COMANDS = ("LED","*IDN","CALIB","MOVE","STB")
+COMANDS = ("LED","*IDN","CALIB","MOVE","STB","CLM")
 
 class Command_Handler():
     """Clase que crea una instancia `Command_Handler`, hace de etapa intermedia entre el MQTT_Manager y el Robot."""
@@ -64,6 +64,19 @@ class Command_Handler():
                     self.robot.stabilize(Kp=float(args[0]),a=float(args[1]))
                 elif len(c) == 4:
                     self.robot.stabilize(Kp=float(args[0]),a=float(args[1]),Ki=float(args[2]))
+                else:
+                    self.not_valid(command)
+                    return False
+            elif c[0] == "CLM":
+                args = c[1:]
+                if len(c) == 2:
+                    self.robot.cl_move_forward(power=float(args[0]))
+                elif len(c) == 3:
+                    self.robot.cl_move_forward(power=float(args[0]),Kp=float(args[1]))
+                elif len(c) == 4:
+                    self.robot.cl_move_forward(power=float(args[0]),Kp=float(args[1]),a=float(args[2]))
+                elif len(c) == 5:
+                    self.robot.cl_move_forward(power=float(args[0]),Kp=float(args[1]),a=float(args[2]),Ki=float(args[3]))
                 else:
                     self.not_valid(command)
                     return False
