@@ -215,12 +215,10 @@ class Robot():
         self.standby()
         return True
 
-    def cl_move_forward(self, power:float, Kp, Ki=0, a=0.9, end_t=10):
-        Kd=0
+    def cl_move_forward(self, power:float, Kp, Ki=0, a=0.9, Kd=0, end_t=10):
         t0 = t = time.monotonic()
         ref_angle = self.IMU.euler[0]
-        ref_angle = check_angle(ref_angle)
-        controller = PID_Controller(Kp, Ki, Kd, ref_angle, ref_angle, a, filter=False)
+        controller = PID_Controller(Kp, Ki, Kd, ref_angle, ref_angle, a, filter=False, sat=100)
         self.checkmotors()
         self.motor_R.movement = CLOCKWISE
         self.motor_L.movement = COUNTER_CLOCKWISE
@@ -229,14 +227,24 @@ class Robot():
         while(t-t0) < end_t:
             prev_t = t
             current_angle = self.IMU.euler[0]
-            current_angle = check_angle(current_angle)
+            if (current_angle - ref_angle) < 0:
+                self.motor_R.movement = CLOCKWISE
+                self.motor_L.movement = COUNTER_CLOCKWISE
             t = time.monotonic()
             dt = t - prev_t
-            pid = controller.update(current_angle, dt)
+            pid = controller.update2(current_angle, dt)
 
-
-            self.motor_R.power = power - pid/2
-            self.motor_L.power = power + pid/2
+            power_R = power - pid/2
+            power_L = power + pid/2
+            # Para que se de la vuekta rapido cuando se satura.
+            if power_L == 0:
+                self.motor_L.movement = CLOCKWISE
+                power_L == 100
+            if power_R == 0:
+                self.motor_R.movement = COUNTER_CLOCKWISE
+                power_L == 100
+            self.motor_R.power = power_R
+            self.motor_L.power = power_L
 
         self.motor_R.movement = STANDBY
         self.motor_L.movement = STANDBY     
