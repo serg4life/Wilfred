@@ -17,7 +17,7 @@ class PID_Controller():
         self.Ki = Ki
         self.Kd = Kd
         self.a = a
-        Kr = 0.01
+        #Kr = 0.01
         if Kr is None:
             #Como no estamos usando Kd, siempre es 0 asique le daremos un valor  a ojo.add()
             self.Kr = mt.sqrt(self.Ki * self.Kd)    #Tipicamente
@@ -38,8 +38,7 @@ class PID_Controller():
     def update(self, measure, dt):
         """Actualiza los valores de un objeto PID_Controller y devuelve la salida."""
         error = self.ref - measure
-        error_pondered = self.b * self.ref - measure
-        #self.derivative = (error - self.prev_error) / dt
+        self.derivative = (error - self.error_prev) / dt
         self.derivative_pondered = (1-self.a)*(self.c * (self.ref - self.a * self.ref_prev) - (measure - self.a * self.measure_prev)) / dt
 
         # Anti-Windup
@@ -52,10 +51,42 @@ class PID_Controller():
             i_control = self.Ki * self.integral
 
         # Calcular la señal de control
-        #u = self.Kp*error_pondered + i_control + self.filtro_d.get_value(self.Kd * self.derivative_pondered)
         if self.filter:
             self.derivative_pondered = self.filtro_d.get_value(self.derivative_pondered)
         u = self.Kp * self.derivative_pondered + i_control
+        
+        # Para no dar mas tension de la que los motores aceptan
+        if u > self.sat:
+            u = self.sat
+        elif u < -self.sat:
+            u = -self.sat
+
+        # Actualizar los valores previos
+        self.error_prev = error
+        self.measure_prev = measure
+        self.ref_prev = self.ref
+        self.u_prev = u
+
+        return u
+    
+    def update2(self, measure, dt):
+        """Actualiza los valores de un objeto PID_Controller y devuelve la salida pero, utiliza una notacion diferente (Kp, Ki, Kd)."""
+        error = check_angle(self.ref - measure) #Con el check_angle funciona mejor el control de la orientacion.
+        self.derivative = (check_angle(error - self.error_prev)) / dt
+
+        # Anti-Windup
+        if self.u_prev > self.sat:
+            self.es = self.sat - self.u_prev
+            self.integral += (self.Ki * error + self.Kr * self.es) * dt
+            i_control = self.integral   #Si el sistema esta saturado añade un termino negativo.
+        else:
+            self.integral += error * dt
+            i_control = self.Ki * self.integral
+
+        # Calcular la señal de control
+        if self.filter:
+            self.derivative = self.filtro_d.get_value(self.derivative)
+        u = self.Kp*error + i_control + self.filtro_d.get_value(self.Kd * self.derivative)
         
         # Para no dar mas tension de la que los motores aceptan
         if u > self.sat:
@@ -84,3 +115,10 @@ class PID_Filter():
         self.vo_prev = vo
         self.vi_prev = data
         return vo
+
+def check_angle(angle):
+    if angle > 180:
+        new_angle = -(360-angle)
+    else:
+        new_angle = angle
+    return new_angle
