@@ -236,7 +236,7 @@ class Robot():
 
             power_R = power - pid/2
             power_L = power + pid/2
-            # Para que se de la vuekta rapido cuando se satura.
+            #Para que se de la vuelta rapido cuando se satura.
             if power_L == 0:
                 self.motor_L.movement = CLOCKWISE
                 power_L == 100

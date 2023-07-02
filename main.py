@@ -51,4 +51,6 @@ else:
         time.sleep(0.5)
         Wilfred.led.value = False
         time.sleep(0.5)
+        Wilfred.cl_move_forward(50,5.5,0.1,0.01)
+        time.sleep(5)
     
