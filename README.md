@@ -25,5 +25,6 @@ The Fusion 360 files of the robot CADs and the designed PCB are available [HERE]
 <img src="/Robot%20design%20example/sch_wilfred.png" width="700">
 
 ## Designed PCB
+The Gerber files of this PCB design are availabe [HERE](/Robot%20design%20example/GERBER)
 <img src="/Robot%20design%20example/PCB_CAD.png" width="700">
   
