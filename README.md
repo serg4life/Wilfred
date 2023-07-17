@@ -1,6 +1,6 @@
 # Wilfred, a robot design example
 In this repository we provide the Circuitpython code and the Fusion 360 files needed to build and use a two DC motors robot. The robot support Wifi connection and is controlled
-using MQTT protocol. (Note that some parts of the code depend of the used microcontroller and electronic modules.)
+using MQTT protocol. (Note that some parts of the code depend of the used microcontroller and electronic modules).
 The Fusion 360 files of the robot CADs and the designed PCB are available [HERE](/Robot%20design%20example/Fusion%20files).
 
 ## Main components:
